@@ -7,6 +7,7 @@ export interface SceneControls {
   wireframe: boolean;
   skybox: boolean;
   acceptanceRange: number;
+  pyramidTint: string;
 }
 
 export type ControlChangeListener = (controls: SceneControls) => void;
@@ -24,8 +25,9 @@ export class ControlPanel {
   private state: SceneControls = {
     showModel: true,
     wireframe: false,
-    skybox: false,
+    skybox: true,
     acceptanceRange: 50,
+    pyramidTint: '#ffffff',
   };
 
   private postState: Partial<PostProcessingState> = {};
@@ -68,6 +70,11 @@ export class ControlPanel {
       this.buildToggle('Show Model', 'showModel'),
       this.buildToggle('Wireframe', 'wireframe'),
       this.buildToggle('Skybox', 'skybox'),
+    ]));
+
+    // Pyramid tint
+    this.container.appendChild(this.buildSection('Pyramid Tint', [
+      this.buildColorPicker(),
     ]));
 
     // Acceptance range
@@ -326,6 +333,31 @@ export class ControlPanel {
     return wrap;
   }
 
+  // Color picker
+  private buildColorPicker(): HTMLDivElement {
+    var wrap = document.createElement('div');
+    Object.assign(wrap.style, {
+      display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0',
+    });
+    var lbl = document.createElement('span');
+    lbl.textContent = 'Tint Color';
+    Object.assign(lbl.style, { fontSize: '13px' });
+    var input = document.createElement('input');
+    input.type = 'color';
+    input.value = this.state.pyramidTint;
+    Object.assign(input.style, {
+      width: '40px', height: '30px', border: 'none', borderRadius: '4px',
+      cursor: 'pointer', background: 'transparent',
+    });
+    var self = this;
+    input.addEventListener('input', () => {
+      self.state.pyramidTint = input.value;
+      self.emit();
+    });
+    wrap.append(lbl, input);
+    return wrap;
+  }
+
   // Reset button
   private buildResetButton(): HTMLDivElement {
     var wrap = document.createElement('div');
@@ -430,8 +462,9 @@ export class ControlPanel {
     this.state = {
       showModel: true,
       wireframe: false,
-      skybox: false,
+      skybox: true,
       acceptanceRange: 50,
+      pyramidTint: '#ffffff',
     };
     // Reset post-processing state
     this.postState = {};
@@ -495,6 +528,11 @@ export class ControlPanel {
     selects.forEach(function(sel) {
       if (sel === self.selectEl) return; // skip event selector
       sel.value = '4'; // ACES Filmic
+    });
+    // Reset color picker to default
+    var colorInputs = this.container.querySelectorAll('input[type="color"]');
+    colorInputs.forEach(function(input) {
+      (input as HTMLInputElement).value = '#ffffff';
     });
   }
   dispose(): void {

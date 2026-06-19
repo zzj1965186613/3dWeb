@@ -32,6 +32,11 @@ class EventManager {
     this.currentIndex = 0;
   }
 
+  async loadFromData(data: SampleData): Promise<void> {
+    this.data = data;
+    this.currentIndex = 0;
+  }
+
   getEvents(): EventData[] {
     return this.data?.events ?? [];
   }

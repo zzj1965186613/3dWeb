@@ -12,14 +12,13 @@ function createSkyboxMesh(): THREE.Mesh {
   var geo = new THREE.SphereGeometry(80, 32, 16);
   // Flip normals inward so we see the inside
   geo.scale(-1, 1, 1);
+  var skyTexture = loadTexture('/assets/textures/sky_water_landscape.jpg');
   var mat = new THREE.MeshBasicMaterial({
-    color: 0x0a0a1a,
+    map: skyTexture,
     side: THREE.BackSide,
-    transparent: true,
-    opacity: 1.0,
   });
   var mesh = new THREE.Mesh(geo, mat);
-  mesh.visible = false;
+  mesh.visible = true;
   mesh.name = 'skybox';
   return mesh;
 }
@@ -51,9 +50,13 @@ export async function createPyramid(): Promise<PyramidHandles> {
   group.add(mesh);
 
   // Ground plane
-  var planeGeo = new THREE.PlaneGeometry(10, 10);
+  var planeGeo = new THREE.CircleGeometry(80, 64);
+  var groundTexture = loadTexture('/assets/textures/ground3.jpg');
+  groundTexture.wrapS = THREE.RepeatWrapping;
+  groundTexture.wrapT = THREE.RepeatWrapping;
+  groundTexture.repeat.set(16, 16);
   var planeMat = new THREE.MeshStandardMaterial({
-    color: 0x2a2a3e,
+    map: groundTexture,
     roughness: 0.8,
   });
   var ground = new THREE.Mesh(planeGeo, planeMat);

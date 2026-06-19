@@ -5,6 +5,9 @@ import { createPyramid } from './domain/pyramid';
 import { eventManager } from './domain/events';
 import { applyEventToMesh } from './domain/applyEvent';
 import { ChartPanel } from './domain/charts';
+import { Visualization2D } from './domain/visualization2D';
+import { MuonVectorVisualizer } from './domain/muonVector';
+import { MuonDataLoader } from './domain/dataLoader';
 import { Layout } from './ui/Layout';
 import { ControlPanel } from './ui/ControlPanel';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -48,8 +51,56 @@ async function init() {
   var handles = await createPyramid();
   scene.add(handles.group);
 
-  // Load event data
-  await eventManager.load('/data/sample.json');
+  // Muon vector visualizer
+  var muonVisualizer = new MuonVectorVisualizer(handles.group, 50);
+
+  // Load real muon detector data
+  var dataLoader = new MuonDataLoader();
+  try {
+    var { pedestal, geometry, adcMap } = await dataLoader.loadAll('/data/config');
+    console.log('Loaded detector data:', { detector: geometry.detectorName, planes: geometry.planes.length });
+    
+    // Create real events from geometry data
+    var realEvents = geometry.planes.map((plane, index) => ({
+      id: index + 1,
+      name: plane.name,
+      energy: 100 + Math.random() * 1400, // Simulated energy
+      intensity: 0.3 + Math.random() * 0.7,
+      color: [
+        plane.direction === 'X' ? 0.2 : 1.0,
+        plane.direction === 'Y' ? 0.5 : 0.2,
+        1.0
+      ] as [number, number, number],
+      emissive: [0.05, 0.1, 0.3] as [number, number, number],
+      roughness: 0.5,
+      metalness: 0.2,
+      scale: 1.0,
+      description: `Detector plane: ${plane.name} (${plane.startTriangle}), Z=${plane.zPosition}cm`
+    }));
+
+    // Load events into event manager
+    await eventManager.loadFromData({
+      title: `Muon Detector: ${geometry.detectorName}`,
+      events: realEvents
+    });
+
+    // Create sample muon trajectories
+    for (var i = 0; i < 5; i++) {
+      var hits = [];
+      for (var j = 0; j < geometry.planes.length; j++) {
+        var plane = geometry.planes[j];
+        hits.push({
+          x: (Math.random() - 0.5) * 40,
+          y: (Math.random() - 0.5) * 40,
+          layer: j
+        });
+      }
+      muonVisualizer.createTrajectory(hits);
+    }
+  } catch (error) {
+    console.warn('Failed to load real data, falling back to sample:', error);
+    await eventManager.load('/data/sample.json');
+  }
 
   // Apply initial event
   var initial = eventManager.getCurrentEvent();
@@ -62,6 +113,9 @@ async function init() {
   // UI: ChartPanel
   var chartPanel = new ChartPanel(layout.getPanelContainer());
   chartPanel.init();
+
+  // UI: 2D Visualization
+  var visualization2D = new Visualization2D(layout.get2DContainer());
 
   // Sync scene on event change
   eventManager.onChange(function(event) {
